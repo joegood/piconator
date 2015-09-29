@@ -16,5 +16,8 @@ on his hardware and code:
 
 https://github.com/hzeller/rpi-rgb-led-matrix
 
+https://learn.adafruit.com/smartmatrix-animated-gif-player/gifs
+
+http://ezgif.com/
 
 > Written with [StackEdit](https://stackedit.io/).
