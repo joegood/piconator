@@ -19,6 +19,15 @@ proper windows class.  One option I am leaning toward is having the default
 state push to the screen, and that works on both Windows and the Pi.  Then,
 there will be a command-line parameter to trigger it to push to the matrix.
 
+Scratch that idea.  The windows command line window doesn't allow for enough
+custom colors to display the 256 colors in a GIF, much less a PNG or JPG.
+Because the original ideas was to give me the ability to develop on Windows
+and remotely push to my Pi, I can achieve the same goal by allowing the 
+console app to just create a windows form that displays it.  The Pi
+should ignore that if the GUI isn't started or at least raise an exception,
+which I can capture.  On the Pi, the command line option will route it
+to the matrix anyway.
+
 
 Some links to keep around:
 

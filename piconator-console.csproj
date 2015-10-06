@@ -40,6 +40,7 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -49,11 +50,19 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="classes\ImageLib.cs" />
+    <Compile Include="classes\RunParams.cs" />
+    <Compile Include="forms\ImageAnimatorWindow.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="forms\ImageAnimatorWindow.Designer.cs">
+      <DependentUpon>ImageAnimatorWindow.cs</DependentUpon>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="3x3_grid_2.ico" />
@@ -93,6 +102,11 @@
     <Content Include="stills\space invader.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="forms\ImageAnimatorWindow.resx">
+      <DependentUpon>ImageAnimatorWindow.cs</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
