@@ -23,6 +23,8 @@ namespace Piconator.Classes
         public RunParams()
         {
 
+            Console.WriteLine("OSVersion = {0}", System.Environment.OSVersion);
+
             // Determine the OS
             // Research this..
             this.Platform = PlatformInfo.Windows;

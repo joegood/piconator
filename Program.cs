@@ -16,6 +16,9 @@ namespace Piconator
             // I'm abandoning the idea of animating the GIF in the console but will still use the console for analysis, if command line
             // options are present to direct that.
 
+            var runparams = new RunParams();
+
+
             double ratio = 0.9;
             Console.SetWindowSize((int)Math.Round(Console.LargestWindowWidth * ratio), (int)Math.Round(Console.LargestWindowHeight * ratio));
             Console.SetBufferSize(Console.WindowWidth, 10000);
