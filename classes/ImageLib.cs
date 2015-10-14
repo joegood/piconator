@@ -153,6 +153,12 @@ namespace Piconator.Classes
                 set;
             }
 
+            public Image Image
+            {
+                get;
+                set;
+            }
+
             public string Filename { get; set; }
             public string FilePath { get; set; }
             public string Name { get; set; }
@@ -160,9 +166,27 @@ namespace Piconator.Classes
             public int FadeInMS { get; set; }
             public int FadeOut { get; set; }
 
-        }
+            private Color[,] ProcessImage(Bitmap img)
+            {
+                if (img == null) { return null; }
+
+                var matrix = new Color[32, 32];
+
+                for (int x = 0; x < img.Width; x++)
+                {
+                    for (int y = 0; y < img.Height; y++)
+                    {
+                        matrix[x, y] = img.GetPixel(x, y);
+                    }
+                }
+
+                return matrix;
+
+            } // ProcessImage()
+
+        } // class PlaylistItem
 
 
-    }
-}
+    } // class Imagelib
+}// namespace
 
