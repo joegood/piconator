@@ -1,0 +1,26 @@
+{
+  "1": {
+    "file": "./anim/matrix.gif",
+    "duration": 30
+  },
+  "2": {
+    "file": "./anim/spinning balls.gif",
+    "duration": 30
+  },
+  "3": {
+    "file": "water.gif",
+    "duration": 30
+  },
+  "4": {
+    "file": "./stills/bosconian.png",
+    "duration": 30
+  },
+  "5": {
+    "file": "space invader.png",
+    "duration": 30
+  },
+  "6": {
+    "file": "pacman-blinky.png",
+    "duration": 30
+  }
+}
