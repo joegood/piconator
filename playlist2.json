@@ -1,0 +1,16 @@
+{
+  "tux": {
+    "health": 233,
+    "level": 44,
+    "xyzzy": { "note": "this is teh xyzzy note" }
+  },
+  "beastie": {
+    "health": 13,
+    "level": 6
+  },
+  "konqi": {
+    "health": 18,
+    "level": 7
+  },
+  "5": { "someting":"wonderful" }
+}
