@@ -1,3 +1,5 @@
+import datetime
+
 __author__ = 'Joe'
 
 import sys
@@ -9,14 +11,13 @@ try:
     from PIL import Image, ImageSequence
 except ImportError as e:
     error = "Please install Python Imaging Library: pip install pillow"
-    log.logger.error(error)
     raise ImportError(error)
 
 from bibliopixel import colors
 from bibliopixel.led import LEDMatrix
 from bibliopixel.animation import BaseMatrixAnim
 
-from playlist import PLAYLIST_KEY_DURATION, PLAYLIST_KEY_FILE, PLAYLIST_KEY_FRAME_TIME
+from playlist import *
 
 
 # I originally wanted to subclass out the bibliopixel.image.ImageAnim class to add an initializer that could build from
@@ -98,26 +99,26 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
                 buffer[pixel*3 + 1] = gamma[g]
                 buffer[pixel*3 + 2] = gamma[b]
 
-        return (duration, buffer)
+        return buffer
 
     def _getBufferFromPath(self, imagePath, offset = (0,0)):
         img = Image.open(imagePath)
         return self._getBufferFromImage(img, offset)
 
-    def __init__(self, led, playlist, offset=(0, 0), bgcolor = colors.Off, brightness = 255):
+    def __init__(self, led, plist, offset=(0, 0), bgcolor = colors.Off, brightness = 255):
         """
 
         :param offset:
         :param bgcolor:
         :param brightness:
         :param led: LEDMatrix
-        :param playlist: dict
+        :param plist: dict
 
         Helper class for building and displaying image animations for GIF files or a set of still bitmaps (png, gif,
         bmp, jpg) built from a playlist dictionary object.
 
         led - LEDMatrix instance
-        playlist - The dictionary loaded from the playlist.json file.
+        plist - The dictionary loaded from the playlist.json file.
         offset - X,Y tuple coordinates at which to place the top-left corner of the image
         bgcolor - RGB tuple color to replace any transparent pixels with. Avoids transparent showing as black
         brightness - Brightness value (0-255) to scale the image by. Otherwise uses master brightness at the time of
@@ -164,29 +165,36 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
         self._count = 0
 
         # check that our playlist has things...
-        assert playlist is not None, "Playlist is undefined"
-        assert len(playlist) > 0, "Playlist is empty"
+        assert plist is not None, "Playlist is undefined"
+        assert len(plist) > 0, "Playlist is empty"
+        print("")
+        print("Found {0} items in playlist...".format(len(plist)))
 
-        for key in sorted(playlist):
-            playlist_item = playlist[key]
+        self.drawCurrentTime()
+
+        for key in sorted(plist):
+            playlist_item = plist[key]
             print "%s: %s" % (key, playlist_item)
 
             img_file = ""
             duration_s = 30
             frame_time_ms = 150
 
+            # find the image file.  if not found, skip.
             try:
                 img_file = findfile(playlist_item[PLAYLIST_KEY_FILE])
             except IOError:
                 print "{0} not found. Skipping.".format(img_file)
                 continue  # skip to next item in dictionary
 
+            # check the duration property.  if it's not there, default to 30
             try:
                 if playlist_item[PLAYLIST_KEY_DURATION] > 0:
                     duration_s = playlist_item[PLAYLIST_KEY_DURATION]
             except KeyError:
                     duration_s = 30
 
+            # check the frame rate.  if not there, default to 150ms per frame
             try:
                 if playlist_item[PLAYLIST_KEY_FRAME_TIME] > 0:
                     frame_time_ms = playlist_item[PLAYLIST_KEY_FRAME_TIME]
@@ -196,6 +204,7 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
             # load the image
             img = Image.open(img_file)
 
+            # debug print some image properties
             print "\t>>>>>>>>>> {}".format(img.filename)
             print "\tformat: {}".format(img.format)
             print "\tmode: {}".format(img.mode)
@@ -210,6 +219,31 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
                 print "\tis_animated: False"
                 print "\tn_frames: 0"
             print ""
+
+            # assign everything back into the dictionary and we will make an array of those to produce the frames
+            playlist_item[PLAYLIST_KEY_FILE] = img_file
+            playlist_item[PLAYLIST_KEY_DURATION] = duration_s
+            playlist_item[PLAYLIST_KEY_FRAME_TIME] = frame_time_ms
+
+            # if this is a .gif, we need to pull an image for each frame and assign that a slot in the animation.
+            # if it is another raster, just load it
+
+            # TODO: Determine if animatd gifs can be resized in PIL and all frames are processed
+            # TODO: Determine if there is some universal format that the images need to be translated into
+
+            if img_file.endswith(".gif"):
+                for frame in ImageSequence.Iterator(img):
+                    # copy the frame info from the playlist so we can just add a new binary
+                    gif_playlist_item = playlist_item.copy()
+                    gif_playlist_item[PLAYLIST_KEY_BINARYIMAGE] = self._getBufferFromImage(frame)
+                    self._images.append(gif_playlist_item)
+                    self._count += 1
+            else:
+                playlist_item[PLAYLIST_KEY_BINARYIMAGE] = self._getBufferFromImage(img)
+                self._images.append(playlist_item)
+                self._count += 1
+
+
 
 
         '''
@@ -253,14 +287,37 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
 
         self._curImage = 0
 
+    def drawCurrentTime(self):
+        """
+        :rtype : None
+        """
+        self._led.all_off()
+        # at size=1, chars are 6 pixels wide, 8 tall.  1 pad pixel on bottom and right of block
+        from datetime import datetime
+        d = datetime.now()
+        self._led.drawText("{:%I:%M}".format(d), 1, 1, colors.White, colors.Off, 1)
+        self._led.drawText("{:%b%d}".format(d), 1, 10, colors.Gray, colors.Off, 1)
+        self._led.drawText("{:%Y}".format(d), 1, 19, colors.Gray, colors.Off, 1)
+        self._led.update()
+
     def preRun(self):
         self._curImage = 0
 
-    def step(self, amt = 1):
+    # this is called by the base class to actually do the drawing of the frame
+    def step(self, amt=1):
         self._led.all_off()
 
-        self._led.setBuffer(self._images[self._curImage][1])
-        self._internalDelay = self._images[self._curImage][0]
+        # instead of having a {duration, buffer} tupple in the _images array, it is a dictionary with:
+        # PLAYLIST_KEY_FILE = "file"
+        # PLAYLIST_KEY_DURATION = "duration_s"
+        # PLAYLIST_KEY_FRAME_TIME = "frame_time_ms"
+        # PLAYLIST_KEY_BINARYIMAGE = "binaryimage"
+
+        buffer = self._images[self._curImage][PLAYLIST_KEY_BINARYIMAGE]
+        frameTime = self._images[self._curImage][PLAYLIST_KEY_FRAME_TIME]
+
+        self._led.setBuffer(buffer)
+        self._internalDelay =frameTime
 
         self._curImage += 1
         if self._curImage >= self._count:
