@@ -7,6 +7,8 @@ PLAYLIST_KEY_FILE = "file"
 PLAYLIST_KEY_DURATION = "duration_s"
 PLAYLIST_KEY_FRAME_TIME = "frame_time_ms"
 PLAYLIST_KEY_BINARYIMAGE = "binaryimage"
+PLAYLIST_KEY_LOOPSTART = "loopstart"
+PLAYLIST_KEY_KEYFRAME = "keyframe"
 
 
 #just a simple function call now until I build out a proper object

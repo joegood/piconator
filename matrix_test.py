@@ -17,7 +17,7 @@ from playlist import *
 #import bibliopixel.image as image
 import playlist_image_sequence_builder as imagebuilder
 
-driver = DriverVisualizerWindow(width=32, height=32, stayTop=True, pixelSize=20)
+driver = DriverVisualizerWindow(width=32, height=32, stayTop=True, pixelSize=4)
 try:
 
     #change rotation and vert_flip as needed by your display

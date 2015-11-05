@@ -1,28 +1,29 @@
 {
   "1": {
     "file": "./anim/matrix.gif",
-    "duration_s": 30,
+    "duration_s": 5,
     "frame_time_ms": 150
   },
   "2": {
     "file": "./anim/spinning balls.gif",
-    "duration_s": 30,
+    "duration_s": 5,
     "frame_time_ms": 50
   },
   "3": {
     "file": "water.gif",
-    "duration_s": 30
+    "duration_s": 5,
+    "frame_time_ms": 50
   },
   "4": {
     "file": "./stills/bosconian.png",
-    "duration_s": 30
+    "duration_s": 5
   },
   "5": {
     "file": "space invader.png",
-    "duration_s": 30
+    "duration_s": 5
   },
   "6": {
     "file": "pacman-blinky.png",
-    "duration_s": 30
+    "duration_s": 5
   }
 }
