@@ -1,11 +1,11 @@
-import datetime
-
 __author__ = 'Joe'
 
 import sys
 import os
 os.sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import glob
+import datetime
+import time
 
 try:
     from PIL import Image, ImageSequence
@@ -37,7 +37,7 @@ def findfile(filepath):
     if os.path.isfile(filepath):
         return filepath
 
-    locations = ["./", "./anim/", "./stills", "./img"]
+    locations = [".\\", ".\\anim\\", ".\\stills", ".\\img"]
     corename = os.path.basename(filepath)
 
     if __debug__:
@@ -108,8 +108,6 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
     def __init__(self, led, plist, offset=(0, 0), bgcolor = colors.Off, brightness = 255):
         """
 
-
-        :type self: PlaylistImageAnim
         :param offset:
         :param bgcolor:
         :param brightness:
@@ -165,6 +163,9 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
         self._offset = offset
         self._images = []
         self._count = 0
+        self._loopstarttime = None
+
+        self.drawCurrentTime(brightness=255)
 
         # check that our playlist has things...
         assert plist is not None, "Playlist is undefined"
@@ -172,7 +173,6 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
         print("")
         print("Found {0} items in playlist...".format(len(plist)))
 
-        self.drawCurrentTime()
 
         for key in sorted(plist):
             playlist_item = plist[key]
@@ -207,28 +207,25 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
             img = Image.open(img_file)
 
             # debug print some image properties
-            debug_image_data = False
-            if debug_image_data:
-                print "\t>>>>>>>>>> {}".format(img.filename)
-                print "\tformat: {}".format(img.format)
-                print "\tmode: {}".format(img.mode)
-                print "\tsize: {}".format(img.size)
-                print "\twidth: {}".format(img.width)
-                print "\theight: {}".format(img.height)
-                print "\tinfo: {}".format(img.info)
-                if getattr(img, "is_animated", False):
-                    print "\tis_animated: {}".format(img.is_animated)
-                    print "\tn_frames: {}".format(img.n_frames)
-                else:
-                    print "\tis_animated: False"
-                    print "\tn_frames: 0"
-                print ""
+            print "\t>>>>>>>>>> {}".format(img.filename)
+            print "\tformat: {}".format(img.format)
+            print "\tmode: {}".format(img.mode)
+            print "\tsize: {}".format(img.size)
+            print "\twidth: {}".format(img.width)
+            print "\theight: {}".format(img.height)
+            print "\tinfo: {}".format(img.info)
+            if getattr(img, "is_animated", False):
+                print "\tis_animated: {}".format(img.is_animated)
+                print "\tn_frames: {}".format(img.n_frames)
+            else:
+                print "\tis_animated: False"
+                print "\tn_frames: 0"
+            print ""
 
             # assign everything back into the dictionary and we will make an array of those to produce the frames
             playlist_item[PLAYLIST_KEY_FILE] = img_file
             playlist_item[PLAYLIST_KEY_DURATION] = duration_s
             playlist_item[PLAYLIST_KEY_FRAME_TIME] = frame_time_ms
-            playlist_item[PLAYLIST_KEY_LOOP_ROOT] = self._count
 
             # if this is a .gif, we need to pull an image for each frame and assign that a slot in the animation.
             # if it is another raster, just load it
@@ -236,6 +233,8 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
             # TODO: Determine if animatd gifs can be resized in PIL and all frames are processed
             # TODO: Determine if there is some universal format that the images need to be translated into
 
+            loopstart = self._count
+            playlist_item[PLAYLIST_KEY_KEYFRAME] = loopstart
             if img_file.endswith(".gif"):
                 for frame in ImageSequence.Iterator(img):
                     # copy the frame info from the playlist so we can just add a new binary
@@ -243,13 +242,16 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
                     gif_playlist_item[PLAYLIST_KEY_BINARYIMAGE] = self._getBufferFromImage(frame)
                     self._images.append(gif_playlist_item)
                     self._count += 1
+                    playlist_item[PLAYLIST_KEY_KEYFRAME] = None
+                    playlist_item[PLAYLIST_KEY_DURATION] = None
+                # assign some things back to the final frame of the anim
+                gif_playlist_item[PLAYLIST_KEY_LOOPSTART] = loopstart
+                gif_playlist_item[PLAYLIST_KEY_DURATION] = duration_s
             else:
                 playlist_item[PLAYLIST_KEY_BINARYIMAGE] = self._getBufferFromImage(img)
                 self._images.append(playlist_item)
                 self._count += 1
-
-
-
+                playlist_item[PLAYLIST_KEY_LOOPSTART] = loopstart
 
         '''
         # this code centers smaller images into the LED frame then adds them into the animation array, that is
@@ -292,11 +294,20 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
 
         self._curImage = 0
 
-    def drawCurrentTime(self):
+        time.sleep(3)
+        # now fade out the clock
+        for b in range(255, 0, -32):
+            self.drawCurrentTime(brightness=b)
+        self._led.all_off()
+        self._led.update()
+        time.sleep(1)  # 1 second
+
+    def drawCurrentTime(self, brightness=255):
         """
         :rtype : None
         """
         self._led.all_off()
+        self._led.masterBrightness = brightness
         # at size=1, chars are 6 pixels wide, 8 tall.  1 pad pixel on bottom and right of block
         from datetime import datetime
         d = datetime.now()
@@ -312,25 +323,43 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
     def step(self, amt=1):
         self._led.all_off()
 
-        # instead of having a {duration, buffer} tuple in the _images array, it is a dictionary with:
+        # instead of having a {duration, buffer} tupple in the _images array, it is a dictionary with:
         # PLAYLIST_KEY_FILE = "file"
         # PLAYLIST_KEY_DURATION = "duration_s"
         # PLAYLIST_KEY_FRAME_TIME = "frame_time_ms"
         # PLAYLIST_KEY_BINARYIMAGE = "binaryimage"
 
+        duration = self._images[self._curImage][PLAYLIST_KEY_DURATION]
         buffer = self._images[self._curImage][PLAYLIST_KEY_BINARYIMAGE]
         frameTime = self._images[self._curImage][PLAYLIST_KEY_FRAME_TIME]
-        looproot =  self._images[self._curImage][PLAYLIST_KEY_LOOP_ROOT]
+        try:
+            loopstart = self._images[self._curImage][PLAYLIST_KEY_LOOPSTART]
+        except KeyError:
+            loopstart = None
+        try:
+            keyframe = self._images[self._curImage][PLAYLIST_KEY_KEYFRAME]
+        except KeyError:
+            keyframe = None
 
-        debug_frame_display = True
-        if debug_frame_display:
-            print ""
-            print "\tbuffer size: {}".format(len(buffer))
-            print "\tframe time: {}".format(frameTime)
-            print "\tloop root: {}".format(looproot)
+        print ("_curImage = {2}   keyframe = {3}   frameTime = {0}   duration = {4}   loopstart = {1}"
+               .format(frameTime, loopstart, self._curImage, keyframe, duration))
+
+        # If our keyframe field has a value, that means we are at the start of a loop
+        if keyframe is not None:
+            if self._loopstarttime is None:
+                self._loopstarttime = time.time()
+            print("\tloop start time = {0}".format(self._loopstarttime))
 
         self._led.setBuffer(buffer)
-        self._internalDelay =frameTime
+        self._internalDelay = frameTime
+
+        # If we are at the end of a loop, see if we are at (or above) our duration.  If not, loop.
+        if loopstart is not None:   # at end of loop
+            print("\telapsed = {0}     duration={1}".format(time.time() - self._loopstarttime, duration))
+            if (time.time() - self._loopstarttime) < duration:  # we are under our time
+                self._curImage = loopstart-1
+            else:  # we are exiting the loop and need to remove the starting timestamp
+                self._loopstarttime = None
 
         self._curImage += 1
         if self._curImage >= self._count:
