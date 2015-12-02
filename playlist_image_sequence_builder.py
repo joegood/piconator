@@ -108,6 +108,8 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
     def __init__(self, led, plist, offset=(0, 0), bgcolor = colors.Off, brightness = 255):
         """
 
+
+        :type self: PlaylistImageAnim
         :param offset:
         :param bgcolor:
         :param brightness:
@@ -205,25 +207,28 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
             img = Image.open(img_file)
 
             # debug print some image properties
-            print "\t>>>>>>>>>> {}".format(img.filename)
-            print "\tformat: {}".format(img.format)
-            print "\tmode: {}".format(img.mode)
-            print "\tsize: {}".format(img.size)
-            print "\twidth: {}".format(img.width)
-            print "\theight: {}".format(img.height)
-            print "\tinfo: {}".format(img.info)
-            if getattr(img, "is_animated", False):
-                print "\tis_animated: {}".format(img.is_animated)
-                print "\tn_frames: {}".format(img.n_frames)
-            else:
-                print "\tis_animated: False"
-                print "\tn_frames: 0"
-            print ""
+            debug_image_data = False
+            if debug_image_data:
+                print "\t>>>>>>>>>> {}".format(img.filename)
+                print "\tformat: {}".format(img.format)
+                print "\tmode: {}".format(img.mode)
+                print "\tsize: {}".format(img.size)
+                print "\twidth: {}".format(img.width)
+                print "\theight: {}".format(img.height)
+                print "\tinfo: {}".format(img.info)
+                if getattr(img, "is_animated", False):
+                    print "\tis_animated: {}".format(img.is_animated)
+                    print "\tn_frames: {}".format(img.n_frames)
+                else:
+                    print "\tis_animated: False"
+                    print "\tn_frames: 0"
+                print ""
 
             # assign everything back into the dictionary and we will make an array of those to produce the frames
             playlist_item[PLAYLIST_KEY_FILE] = img_file
             playlist_item[PLAYLIST_KEY_DURATION] = duration_s
             playlist_item[PLAYLIST_KEY_FRAME_TIME] = frame_time_ms
+            playlist_item[PLAYLIST_KEY_LOOP_ROOT] = self._count
 
             # if this is a .gif, we need to pull an image for each frame and assign that a slot in the animation.
             # if it is another raster, just load it
@@ -307,7 +312,7 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
     def step(self, amt=1):
         self._led.all_off()
 
-        # instead of having a {duration, buffer} tupple in the _images array, it is a dictionary with:
+        # instead of having a {duration, buffer} tuple in the _images array, it is a dictionary with:
         # PLAYLIST_KEY_FILE = "file"
         # PLAYLIST_KEY_DURATION = "duration_s"
         # PLAYLIST_KEY_FRAME_TIME = "frame_time_ms"
@@ -315,6 +320,14 @@ class PlaylistImageAnim(BaseMatrixAnim):  # inherit from bibliopixel.animation.B
 
         buffer = self._images[self._curImage][PLAYLIST_KEY_BINARYIMAGE]
         frameTime = self._images[self._curImage][PLAYLIST_KEY_FRAME_TIME]
+        looproot =  self._images[self._curImage][PLAYLIST_KEY_LOOP_ROOT]
+
+        debug_frame_display = True
+        if debug_frame_display:
+            print ""
+            print "\tbuffer size: {}".format(len(buffer))
+            print "\tframe time: {}".format(frameTime)
+            print "\tloop root: {}".format(looproot)
 
         self._led.setBuffer(buffer)
         self._internalDelay =frameTime
